@@ -68,9 +68,6 @@ void read_until_pipe(char *output_buf, int output_buf_size) {
 /**
  * @brief output_bufから必要なデータを取得
  */
-/**
- * @brief output_bufから必要なデータを取得
- */
 void output_buf_get(char *buffer, double *output, const char *phrase) {
     int phrase_len = strlen(phrase);
     if (strncmp(buffer, phrase, phrase_len) == 0) {
