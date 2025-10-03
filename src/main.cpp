@@ -8,6 +8,8 @@
 BufferedSerial pc(USBTX, USBRX, 115200);
 BNO055Uart imu(PA_9, PA_10);
 
+serial_unit serial(pc);
+
 float yaw_offset = 0.0f;        // ヨー角の初期オフセット
 double relative_yaw = 0.0;      // IMUから取得した相対ヨー角
 
@@ -151,6 +153,7 @@ int main() {
     // char output_buf[20];
 
     while (1) {
+        serial_read();
         imu_yaw_get();
         // printf("Relative Yaw: %7.2f\n", relative_yaw);
 
@@ -161,7 +164,7 @@ int main() {
         // output_buf_get(output_buf, &Ly, "L3_y:");
         // output_buf_get(output_buf, &Rx, "R3_x:");
 
-        printf("Lx: %f, Ly: %f, Rx: %f", Lx, Ly, Rx);
+        printf("Lx: %f, Ly: %f, Rx: %f, Yaw: %f\n", Lx, Ly, Rx, relative_yaw);
 
         omni_control(Lx, Ly, Rx, relative_yaw);
 
