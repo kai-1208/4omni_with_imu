@@ -1,5 +1,7 @@
 #include "mbed.h"
 #include "BNO055Uart.hpp"
+#include "key.hpp"
+#include "serial_read.hpp"
 
 #define M_PI 3.14159265358979323846
 
@@ -39,40 +41,64 @@ void imu_yaw_get() {
     }
 }
 
-/**
- * @brief ps4コントローラーの入力値を受信
- */
-void read_until_pipe(char *output_buf, int output_buf_size) {
-    char buf[20];
-    int output_buf_index = 0;
-    while (1) {
-        if (pc.readable()) {
-            ssize_t num = pc.read(buf, sizeof(buf) - 1);
-            buf[num] = '\0';
-            for (int i = 0; i < num; i++) {
-                if (buf[i] == '|') {
-                    output_buf[output_buf_index] = '\0';
-                    return;
-                } else if (buf[i] != '\n' && output_buf_index < output_buf_size - 1) {
-                    output_buf[output_buf_index++] = buf[i];
-                }
-            }
-        }
-        if (output_buf_index >= output_buf_size - 1) {
-            output_buf[output_buf_index] = '\0';
-            return;
-        }
-    }
-}
+
+// 以下のコメントアウトは、ps4controller_topic-communicationを使う場合のコード
+
+// /**
+//  * @brief ps4コントローラーの入力値を受信
+//  */
+// void read_until_pipe(char *output_buf, int output_buf_size) {
+//     char buf[20];
+//     int output_buf_index = 0;
+//     while (1) {
+//         if (pc.readable()) {
+//             ssize_t num = pc.read(buf, sizeof(buf) - 1);
+//             buf[num] = '\0';
+//             for (int i = 0; i < num; i++) {
+//                 if (buf[i] == '|') {
+//                     output_buf[output_buf_index] = '\0';
+//                     return;
+//                 } else if (buf[i] != '\n' && output_buf_index < output_buf_size - 1) {
+//                     output_buf[output_buf_index++] = buf[i];
+//                 }
+//             }
+//         }
+//         if (output_buf_index >= output_buf_size - 1) {
+//             output_buf[output_buf_index] = '\0';
+//             return;
+//         }
+//     }
+// }
+
+// /**
+//  * @brief output_bufから必要なデータを取得
+//  */
+// void output_buf_get(char *buffer, double *output, const char *phrase) {
+//     int phrase_len = strlen(phrase);
+//     if (strncmp(buffer, phrase, phrase_len) == 0) {
+//         char *data_pointer = buffer + phrase_len;
+//         *output = atof(data_pointer);
+//     }
+// }
 
 /**
- * @brief output_bufから必要なデータを取得
+ * @brief lx, ly, rxの値を取得
  */
-void output_buf_get(char *buffer, double *output, const char *phrase) {
-    int phrase_len = strlen(phrase);
-    if (strncmp(buffer, phrase, phrase_len) == 0) {
-        char *data_pointer = buffer + phrase_len;
-        *output = atof(data_pointer);
+void move_aa(std::string msg) {
+    msg.erase(0, 2);
+    std::vector<double> joys_d = to_numbers(msg);
+    std::vector<float> joys(joys_d.begin(), joys_d.end());
+    for (auto &joy : joys) {
+        if (joy > -0.08 && joy < 0.08) {
+            joy = 0.0;
+        }
+    }
+    
+    // joysの値をグローバル変数に代入
+    if (joys.size() >= 3) {
+        Lx = joys[0];
+        Ly = joys[1];
+        Rx = joys[2];
     }
 }
 
@@ -122,16 +148,18 @@ int main() {
         while(1);
     }
     
-    char output_buf[20];
+    // char output_buf[20];
 
     while (1) {
-        // imu_yaw_get();
+        imu_yaw_get();
         // printf("Relative Yaw: %7.2f\n", relative_yaw);
-        read_until_pipe(output_buf, sizeof(output_buf));
-        
-        output_buf_get(output_buf, &Lx, "L3_x:");
-        output_buf_get(output_buf, &Ly, "L3_y:");
-        output_buf_get(output_buf, &Rx, "R3_x:");
+
+        // ps4controller_topic-communicationを使う場合のコード
+
+        // read_until_pipe(output_buf, sizeof(output_buf));
+        // output_buf_get(output_buf, &Lx, "L3_x:");
+        // output_buf_get(output_buf, &Ly, "L3_y:");
+        // output_buf_get(output_buf, &Rx, "R3_x:");
 
         printf("Lx: %f, Ly: %f, Rx: %f", Lx, Ly, Rx);
 
