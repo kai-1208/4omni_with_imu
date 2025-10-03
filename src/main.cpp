@@ -38,6 +38,7 @@ void imu_yaw_get() {
         }
 
         relative_yaw = current_yaw;
+        // printf("IMU Update OK: Yaw=%.2f\n", relative_yaw);
     } else {
         printf("Failed to update sensor data.\n");
     }
@@ -87,14 +88,25 @@ void imu_yaw_get() {
  * @brief lx, ly, rxの値を取得
  */
 void move_aa(std::string msg) {
+    printf("Raw msg: %s\n", msg.c_str());
     msg.erase(0, 2);
+    // printf("After erase: %s\n", msg.c_str());
+    
     std::vector<double> joys_d = to_numbers(msg);
+    // printf("Parsed numbers count: %zu\n", joys_d.size());
+    
+    // for (size_t i = 0; i < joys_d.size(); i++) {
+    //     printf("joys_d[%zu]: %f\n", i, joys_d[i]);
+    // }
+    
     std::vector<float> joys(joys_d.begin(), joys_d.end());
     for (auto &joy : joys) {
         if (joy > -0.08 && joy < 0.08) {
             joy = 0.0;
         }
     }
+
+    // printf("Lx: %f, Ly: %f, Rx: %f, Yaw: %f\n", joys[0], joys[1], joys[2], relative_yaw);
     
     // joysの値をグローバル変数に代入
     if (joys.size() >= 3) {
@@ -149,11 +161,21 @@ int main() {
         printf("Failed to initialize BNO055.\n");
         while(1);
     }
-    
+
     // char output_buf[20];
 
     while (1) {
-        serial_read();
+        // 非ブロッキングでシリアル読み取り
+        std::string msg = serial.read_serial();
+        if (msg != "") {
+            if (msg[0] == 'n') {
+                move_aa(msg);
+                // printf("move_aa called\n");
+            } else {
+                key_puress(msg);
+            }
+        }
+        
         imu_yaw_get();
         // printf("Relative Yaw: %7.2f\n", relative_yaw);
 
@@ -164,9 +186,9 @@ int main() {
         // output_buf_get(output_buf, &Ly, "L3_y:");
         // output_buf_get(output_buf, &Rx, "R3_x:");
 
-        printf("Lx: %f, Ly: %f, Rx: %f, Yaw: %f\n", Lx, Ly, Rx, relative_yaw);
+        // printf("Lx: %f, Ly: %f, Rx: %f, Yaw: %f\n", Lx, Ly, Rx, relative_yaw);
 
-        omni_control(Lx, Ly, Rx, relative_yaw);
+        // omni_control(Lx, Ly, Rx, relative_yaw);
 
         ThisThread::sleep_for(20ms);
     }
